@@ -24,13 +24,13 @@ class JokeParser
   attr_accessor :url, :max_characters
   
   def initialize(url, max_characters)
-    self.url = url
-    self.max_characters = max_characters
+    @url = url
+    @max_characters = max_characters
   end
   
   def parse
     jokes = []
-    doc = Nokogiri::HTML(open(url))
+    doc = Nokogiri::HTML(open(@url))
     doc.css('h5').each do |joke|
       text = ""
       joke.content.each_line do |s|
@@ -41,9 +41,13 @@ class JokeParser
         text += s unless s.match("^\s*$")
       end
       text.strip!
-      jokes << text unless text.length > self.max_characters || text.length < 10
+      jokes << text unless text.length > @max_characters || text.length < 10
     end
     jokes
+  end
+
+  def to_s
+    "URL: #@url, max characters: #@max_characters"
   end
 end
 
@@ -51,16 +55,23 @@ class SosMessageClient
   attr_accessor :sosmessage_url, :category_id, :post_url
 
   def initialize(sosmessage_url, category_id)
-    self.sosmessage_url = sosmessage_url
-    self.category_id = category_id
-    self.post_url = self.sosmessage_url << "/api/v1/categories/" << self.category_id << "/message"
+    @sosmessage_url = sosmessage_url
+    @category_id = category_id
+    @post_url = @sosmessage_url << "/api/v1/categories/" << @category_id << "/message"
   end
 
   def postJokes(jokes)
-    uri = URI.parse(self.post_url)
+    uri = URI.parse(@post_url)
+    jokes_posted = 0
     jokes.each do |joke|
       response = Net::HTTP.post_form(uri, {"text" => joke, "contributorName" => CONTRIBUTORS.sample})
+      jokes_posted += 1 if response.code.to_i == 204
     end
+    puts jokes_posted.to_s << " jokes succesfully posted."
+  end
+
+  def to_s
+    "SosMessag API URL: #@post_url"
   end
 end
 
@@ -75,13 +86,18 @@ optparse = OptionParser.new do|opts|
   end
 
   options[:sosmessageurl] = 'http://localhost:3000'
-  opts.on('-url', '--sosmessage-url [URL]', 'The SosMessage API url') do |url|
+  opts.on('-url', '--sosmessage-url URL', 'The SosMessage API url') do |url|
     options[:sosmessageurl] = url
   end
  
   options[:maxcharacters] = 150
   opts.on( '-m', '--max-characters MAX', Integer, 'MAX characters of the joke') do |max_characters|
     options[:maxcharacters] = max_characters
+  end
+
+  options[:dryrun] = false
+  opts.on( '-n', '--dry-run', "Don't actually post the jokes, only display them") do |dry_run|
+    options[:dryrun] = dry_run
   end
  
   opts.on( '-h', '--help', 'Display this screen' ) do
@@ -92,7 +108,17 @@ end
 
 optparse.parse!
 
-if options[:categoryid]
+if options[:dryrun]
+  URLS.each do |url|
+    jokes = JokeParser.new(url, options[:maxcharacters]).parse
+    jokes.each do |joke|
+      puts joke
+      puts ""
+      puts "=========="
+      puts ""
+    end
+  end
+elsif options[:categoryid]
   client = SosMessageClient.new(options[:sosmessageurl], options[:categoryid])
   URLS.each do |url|
     jokes = JokeParser.new(url, options[:maxcharacters]).parse

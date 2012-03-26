@@ -6,19 +6,19 @@ require 'nokogiri'
 require 'open-uri'
 require 'optparse'
 
-URLS = [
-  'http://blaguesland.free.fr/Classiques.htm',
-  'http://blaguesland.free.fr/Blondes.htm',
-  'http://blaguesland.free.fr/Blondes02.htm',
-  'http://blaguesland.free.fr/Femmes.htm',
-  'http://blaguesland.free.fr/Hommes.htm'
-]
+URLS = %w(
+  http://blaguesland.free.fr/Classiques.htm
+  http://blaguesland.free.fr/Blondes.htm
+  http://blaguesland.free.fr/Blondes02.htm
+  http://blaguesland.free.fr/Femmes.htm
+  http://blaguesland.free.fr/Hommes.htm
+)
 
-CONTRIBUTORS = [
-  'Fred', 'Paolo', 'Sebastien', 'Alain', 'Arnaud', 'Cyril', 'Lise', 'Thomas', 
-  'Julien', 'Leo', 'Lucette', 'Ginette', 'Julia', 'Paul', 'Mathieu', 'Megan',
-  'Lea', 'Eric', 'Benjamin', 'Chloe', 'Olivier', 'Laurent', 'Laurence'
-]
+CONTRIBUTORS = %w(
+  Fred Paolo Sebastien Alain Arnaud Cyril Lise Thomas
+  Julien Leo Lucette Ginette Julia Paul Mathieu Megan
+  Lea Eric Benjamin Chloe Olivier Laurent Laurence
+)
 
 class JokeParser
   attr_accessor :url, :max_characters
@@ -57,7 +57,7 @@ class SosMessageClient
   def initialize(sosmessage_url, category_id)
     @sosmessage_url = sosmessage_url
     @category_id = category_id
-    @post_url = @sosmessage_url << "/api/v1/categories/" << @category_id << "/message"
+    @post_url = "#{@sosmessage_url}/api/v1/categories/#{@category_id}/message"
   end
 
   def postJokes(jokes)
@@ -67,7 +67,7 @@ class SosMessageClient
       response = Net::HTTP.post_form(uri, {"text" => joke, "contributorName" => CONTRIBUTORS.sample})
       jokes_posted += 1 if response.code.to_i == 204
     end
-    puts jokes_posted.to_s << " jokes succesfully posted."
+    puts jokes_posted.to_s << " jokes successfully posted."
   end
 
   def to_s
